@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>REALITY 0.5 - Alterswelten & Stimmen</title>
+  <style>
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0a0c12;
+      color: #fff;
+    }
+
+    /* ALTERS-ABFRAGE STARTBILDSCHIRM */
+    #age-gate {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, #1e293b, #090d16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .gate-card {
+      width: 100%;
+      max-width: 360px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #38bdf8;
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.7);
+    }
+    .gate-card h2 { margin: 0 0 8px 0; color: #38bdf8; letter-spacing: 1px; }
+    .gate-card p { font-size: 13px; color: #cbd5e1; line-height: 1.4; margin: 0 0 14px 0; }
+    #age-input {
+      width: 120px;
+      padding: 10px;
+      font-size: 22px;
+      font-weight: 800;
+      text-align: center;
+      border-radius: 10px;
+      border: 2px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      margin-bottom: 14px;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    #age-confirm {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: #38bdf8;
+      color: #000;
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    /* WARNUNG BEI SPIELGRENZE */
+    #zone-warn {
+      display: none;
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      border: 8px solid rgba(239, 68, 68, 0.9);
+      background: rgba(239, 68, 68, 0.16);
+    }
+    #zone-warn-msg {
+      position: fixed;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 85%;
+      max-width: 340px;
+      text-align: center;
+      background: rgba(185, 28, 28, 0.95);
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    /* HUD OBEN */
+    #hud-top {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      max-width: 56%;
+      background: rgba(10, 14, 24, 0.85);
+      border-left: 4px solid #38bdf8;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.35;
+      pointer-events: none;
+      z-index: 20;
+    }
+    #top-right {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      z-index: 25;
+    }
+    #money {
+      font-size: 20px;
+      font-weight: 800;
+      color: #4ade80;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+      pointer-events: none;
+    }
+    .mini-btn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.4);
+      background: rgba(15, 20, 32, 0.85);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* UNTERTITEL FÜR GESPROCHENE STIMMEN */
+    #speech-box {
+      display: none;
+      position: fixed;
+      bottom: 82px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 390px;
+      background: rgba(10, 14, 24, 0.92);
+      border: 2px solid #facc15;
+      border-radius: 12px;
+      padding: 10px 14px;
+      z-index: 35;
+      pointer-events: none;
+      text-align: center;
+    }
+    #speech-who { font-size: 11px; font-weight: 800; color: #facc15; margin-bottom: 3px; }
+    #speech-text { font-size: 13.5px; line-height: 1.35; }
+
+    /* WELT-AUSWAHL FENSTER */
+    #world-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 92%;
+      max-width: 380px;
+      background: rgba(12, 16, 28, 0.97);
+      border: 2px solid #38bdf8;
+      border-radius: 14px;
+      padding: 16px;
+      z-index: 45;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.85);
+    }
+    #world-modal h3 { margin: 0 0 4px 0; font-size: 16px; color: #38bdf8; }
+    #world-modal p { margin: 0 0 10px 0; font-size: 12px; color: #cbd5e1; }
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .preset-btn {
+      padding: 10px 6px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: #1e293b;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .preset-btn.locked {
+      opacity: 0.45;
+      border-color: #ef4444;
+    }
+    .age-tag {
+      display: block;
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    /* AKTION & FAHRPAD */
+    #action-btn {
+      display: none;
+      position: fixed;
+      bottom: 18px;
+      right: 12px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 2px solid #facc15;
+      background: rgba(15, 20, 32, 0.9);
+      color: #facc15;
+      font-weight: 800;
+      font-size: 12px;
+      z-index: 30;
+    }
+    #drive-pad {
+      display: none;
+      position: fixed;
+      bottom: 68px;
+      right: 12px;
+      z-index: 30;
+      touch-action: none;
+    }
+    .pad-row { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
+    .ctrl-btn {
+      width: 46px; height: 46px;
+      border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.65);
+      background: rgba(15, 20, 32, 0.82);
+      color: #fff; font-size: 17px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: none;
+    }
+    .ctrl-btn:active { background: #facc15; color: #000; }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.183.2/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.2/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- ALTERS-ABFRAGE -->
+  <div id="age-gate">
+    <div class="gate-card">
+      <h2>REALITY // ALTER</h2>
+      <p>Wie alt bist du? Je nach Alter werden sichere Kinder-Welten oder der 18+-GTA-Modus freigeschaltet.</p>
+      <input id="age-input" type="number" min="4" max="99" value="18" />
+      <button id="age-confirm">BESTÄTIGEN & TON STARTEN</button>
+    </div>
+  </div>
+
+  <div id="zone-warn">
+    <div id="zone-warn-msg">SPIELGRENZE ERREICHT!<br>Bitte zurück in den sicheren Bereich.</div>
+  </div>
+
+  <div id="hud-top">Tippe unten auf "START AR" und setze 4 Ecken am Boden (0/4).</div>
+
+  <div id="top-right">
+    <div id="money">$ 500</div>
+    <button class="mini-btn" id="age-badge">Alter: 18</button>
+    <button class="mini-btn" id="switch-world-btn" style="display:none;">Welt wechseln</button>
+    <button class="mini-btn" id="reset-zone-btn" style="display:none;">Grenzen neu</button>
+  </div>
+
+  <div id="speech-box">
+    <div id="speech-who">CHARAKTER</div>
+    <div id="speech-text">...</div>
+  </div>
+
+  <div id="world-modal">
+    <h3>Wähle deine Welt</h3>
+    <p id="world-sub">Freigeschaltet für dein Alter:</p>
+    <div class="preset-grid" id="preset-grid"></div>
+  </div>
+
+  <button id="action-btn">AKTION</button>
+  <div id="drive-pad">
+    <div class="pad-row"><button class="ctrl-btn" id="btn-gas">▲</button></div>
+    <div class="pad-row">
+      <button class="ctrl-btn" id="btn-left">◀</button>
+      <button class="ctrl-btn" id="btn-back">▼</button>
+      <button class="ctrl-btn" id="btn-right">▶</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { ARButton } from 'three/addons/webxr/ARButton.js';
+
+    let camera, scene, renderer, controller, reticle;
+    let hitTestSource = null, hitTestSourceRequested = false;
+
+    let userAge = 18;
+    let money = parseInt(localStorage.getItem('reality_money') || '500', 10);
+
+    const corners = [];
+    let zoneReady = false, floorY = 0;
+    let centerPos = new THREE.Vector3();
+    const boundaryGroup = new THREE.Group();
+    const worldGroup = new THREE.Group();
+
+    let currentTheme = '';
+    const movers = [];
+    const mcBlocks = [];
+    let mcBuildMode = true;
+
+    let carGroup = null, carAngle = 0, carSpeed = 0, drivingMode = false;
+    const input = { gas: false, back: false, left: false, right: false };
+
+    const raycaster = new THREE.Raycaster();
+    const tempMatrix = new THREE.Matrix4();
+    let lastTime = 0;
+    let speechTimeout = null;
+
+    const WORLDS = [
+      { id: 'dino',      name: 'Dinosaurier',       minAge: 7,  tag: 'ab 7 • Urzeit' },
+      { id: 'minecraft', name: 'Minecraft-Welt',    minAge: 7,  tag: 'ab 7 • Bauen' },
+      { id: 'space',     name: 'Weltraum',          minAge: 7,  tag: 'ab 7 • UFO & All' },
+      { id: 'castle',    name: 'Ritterburg',        minAge: 7,  tag: 'ab 7 • Mittelalter' },
+      { id: 'zombie',    name: 'Zombie-Abwehr',     minAge: 12, tag: 'ab 12 • Action' },
+      { id: 'gta',       name: 'GTA Street City',   minAge: 18, tag: 'ab 18 • Hart & Frei' }
+    ];
+
+    const ageGate = document.getElementById('age-gate');
+    const ageInput = document.getElementById('age-input');
+    const ageConfirm = document.getElementById('age-confirm');
+    const ageBadge = document.getElementById('age-badge');
+    const hudTop = document.getElementById('hud-top');
+    const moneyEl = document.getElementById('money');
+    const worldModal = document.getElementById('world-modal');
+    const presetGrid = document.getElementById('preset-grid');
+    const switchWorldBtn = document.getElementById('switch-world-btn');
+    const resetZoneBtn = document.getElementById('reset-zone-btn');
+    const actionBtn = document.getElementById('action-btn');
+    const drivePad = document.getElementById('drive-pad');
+    const zoneWarn = document.getElementById('zone-warn');
+    const speechBox = document.getElementById('speech-box');
+    const speechWho = document.getElementById('speech-who');
+    const speechText = document.getElementById('speech-text');
+
+    init();
+
+    function init() {
+      moneyEl.textContent = `$ ${money.toLocaleString('de-DE')}`;
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 30);
+
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 2.0));
+      const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+      sun.position.set(2, 6, 3);
+      scene.add(sun);
+
+      scene.add(boundaryGroup);
+      scene.add(worldGroup);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.xr.enabled = true;
+      renderer.setAnimationLoop(animate);
+      document.body.appendChild(renderer.domElement);
+
+      document.body.appendChild(ARButton.createButton(renderer, {
+        requiredFeatures: ['hit-test'],
+        optionalFeatures: ['dom-overlay'],
+        domOverlay: { root: document.body }
+      }));
+
+      reticle = new THREE.Mesh(
+        new THREE.RingGeometry(0.12, 0.16, 32).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+      );
+      reticle.matrixAutoUpdate = false;
+      reticle.visible = false;
+      scene.add(reticle);
+
+      controller = renderer.xr.getController(0);
+      controller.addEventListener('select', onSelect);
+      scene.add(controller);
+
+      setupUI();
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    function speakLine(who, text, pitch = 1.0, rate = 1.0) {
+      speechWho.textContent = who;
+      speechText.textContent = text;
+      speechBox.style.display = 'block';
+      clearTimeout(speechTimeout);
+      speechTimeout = setTimeout(() => { speechBox.style.display = 'none'; }, 4200);
+
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = 'de-DE';
+          u.pitch = pitch;
+          u.rate = rate;
+          const voices = window.speechSynthesis.getVoices();
+          const deVoice = voices.find(v => v.lang && v.lang.startsWith('de'));
+          if (deVoice) u.voice = deVoice;
+          window.speechSynthesis.speak(u);
+        }
+      } catch (e) {}
+    }
+
+    function addMoney(amount) {
+      money += amount;
+      localStorage.setItem('reality_money', String(money));
+      moneyEl.textContent = `$ ${money.toLocaleString('de-DE')}`;
+    }
+
+    function renderWorldButtons() {
+      presetGrid.innerHTML = '';
+      WORLDS.forEach(w => {
+        const locked = userAge < w.minAge;
+        const btn = document.createElement('button');
+        btn.className = 'preset-btn' + (locked ? ' locked' : '');
+        btn.innerHTML = `${locked ? '🔒 ' : ''}${w.name}<span class="age-tag">${w.tag}</span>`;
+        btn.addEventListener('click', () => {
+          if (locked) {
+            speakLine('ALTERS-SCHUTZ', `Diese Welt ist erst ab ${w.minAge} Jahren freigeschaltet!`, 1.0);
+            return;
+          }
+          loadWorld(w.id);
+        });
+        presetGrid.appendChild(btn);
+      });
+    }
+
+    function setupUI() {
+      [ageGate, worldModal, ageBadge, switchWorldBtn, resetZoneBtn, actionBtn, drivePad].forEach(el => {
+        el.addEventListener('beforexrselect', e => e.preventDefault());
+      });
+
+      ageConfirm.addEventListener('click', () => {
+        userAge = Math.max(4, Math.min(99, parseInt(ageInput.value || '18', 10)));
+        ageBadge.textContent = `Alter: ${userAge}`;
+        ageGate.style.display = 'none';
+        renderWorldButtons();
+        speakLine('REALITY', `Modus für ${userAge} Jahre bereit!`, 1.05);
+      });
+
+      ageBadge.addEventListener('click', () => {
+        ageGate.style.display = 'flex';
+      });
+
+      switchWorldBtn.addEventListener('click', () => {
+        renderWorldButtons();
+        worldModal.style.display = 'block';
+      });
+
+      resetZoneBtn.addEventListener('click', () => {
+        corners.length = 0;
+        zoneReady = false;
+        currentTheme = '';
+        clearGroup(boundaryGroup);
+        clearWorld();
+        worldModal.style.display = 'none';
+        switchWorldBtn.style.display = 'none';
+        resetZoneBtn.style.display = 'none';
+        actionBtn.style.display = 'none';
+        zoneWarn.style.display = 'none';
+        hudTop.textContent = 'Tippe 4 Ecken am Boden an, um die neue Grenze abzustecken (0/4).';
+      });
+
+      actionBtn.addEventListener('click', () => {
+        if (currentTheme === 'gta') {
+          drivingMode = !drivingMode;
+          drivePad.style.display = drivingMode ? 'block' : 'none';
+          actionBtn.textContent = drivingMode ? 'AUSSTEIGEN' : 'AUTO FAHREN';
+        } else if (currentTheme === 'minecraft') {
+          mcBuildMode = !mcBuildMode;
+          actionBtn.textContent = mcBuildMode ? 'MODUS: BAUEN' : 'MODUS: ABBAUEN';
+        }
+      });
+
+      const bindHold = (id, key) => {
+        const b = document.getElementById(id);
+        const on = e => { e.preventDefault(); input[key] = true; };
+        const off = e => { e.preventDefault(); input[key] = false; };
+        b.addEventListener('pointerdown', on);
+        b.addEventListener('pointerup', off);
+        b.addEventListener('pointerleave', off);
+        b.addEventListener('pointercancel', off);
+      };
+      bindHold('btn-gas', 'gas');
+      bindHold('btn-back', 'back');
+      bindHold('btn-left', 'left');
+      bindHold('btn-right', 'right');
+    }
+
+    function clearGroup(grp) {
+      while (grp.children.length > 0) grp.remove(grp.children[0]);
+    }
+
+    function clearWorld() {
+      clearGroup(worldGroup);
+      movers.length = 0;
+      mcBlocks.length = 0;
+      carGroup = null;
+      drivingMode = false;
+      drivePad.style.display = 'none';
+      actionBtn.style.display = 'none';
+    }
+
+    function isInsideZone(x, z) {
+      if (corners.length < 3) return true;
+      let inside = false;
+      for (let i = 0, j = corners.length - 1; i < corners.length; j = i++) {
+        const xi = corners[i].x, zi = corners[i].z;
+        const xj = corners[j].x, zj = corners[j].z;
+        const inter = ((zi > z) !== (zj > z)) &&
+          (x < (xj - xi) * (z - zi) / ((zj - zi) || 1e-6) + xi);
+        if (inter) inside = !inside;
+      }
+      return inside;
+    }
+
+    function randomPointInZone(pull = 0.22) {
+      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+      corners.forEach(p => {
+        minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+        minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z);
+      });
+      for (let t = 0; t < 25; t++) {
+        const x = minX + Math.random() * (maxX - minX);
+        const z = minZ + Math.random() * (maxZ - minZ);
+        if (isInsideZone(x, z)) {
+          return new THREE.Vector3(x + (centerPos.x - x) * pull, floorY, z + (centerPos.z - z) * pull);
+        }
+      }
+      return centerPos.clone();
+    }
+
+    function buildBoundaryVisuals() {
+      clearGroup(boundaryGroup);
+      const cx = corners.reduce((s, p) => s + p.x, 0) / corners.length;
+      const cz = corners.reduce((s, p) => s + p.z, 0) / corners.length;
+      floorY = corners.reduce((s, p) => s + p.y, 0) / corners.length;
+      centerPos.set(cx, floorY, cz);
+      corners.sort((a, b) => Math.atan2(a.z - cz, a.x - cx) - Math.atan2(b.z - cz, b.x - cx));
+
+      const wallMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.13, side: THREE.DoubleSide });
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+
+      for (let i = 0; i < corners.length; i++) {
+        const p1 = corners[i], p2 = corners[(i + 1) % corners.length];
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.0, 10), lineMat);
+        post.position.set(p1.x, floorY + 0.5, p1.z);
+        boundaryGroup.add(post);
+
+        const dx = p2.x - p1.x, dz = p2.z - p1.z;
+        const len = Math.hypot(dx, dz), ang = -Math.atan2(dz, dx);
+        const wall = new THREE.Mesh(new THREE.PlaneGeometry(len, 1.0), wallMat);
+        wall.position.set((p1.x + p2.x) / 2, floorY + 0.5, (p1.z + p2.z) / 2);
+        wall.rotation.y = ang;
+        boundaryGroup.add(wall);
+      }
+    }
+
+    function onSelect() {
+      if (!zoneReady && reticle.visible) {
+        const pos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+        corners.push(pos);
+        const dot = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.25, 14),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+        dot.position.set(pos.x, pos.y + 0.125, pos.z);
+        boundaryGroup.add(dot);
+
+        if (corners.length < 4) {
+          hudTop.textContent = `Ecke ${corners.length}/4 gesetzt! Tippe auf die nächste Ecke.`;
+        } else {
+          zoneReady = true;
+          reticle.visible = false;
+          buildBoundaryVisuals();
+          hudTop.textContent = 'Grenzen aktiv! Wähle jetzt eine Welt aus.';
+          renderWorldButtons();
+          worldModal.style.display = 'block';
+          switchWorldBtn.style.display = 'block';
+          resetZoneBtn.style.display = 'block';
+        }
+        return;
+      }
+
+      if (!zoneReady || !currentTheme) return;
+
+      tempMatrix.identity().extractRotation(controller.matrixWorld);
+      raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+      raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+
+      if (currentTheme === 'minecraft') {
+        const hits = raycaster.intersectObjects(mcBlocks, false);
+        if (hits.length > 0) {
+          const hit = hits[0];
+          if (mcBuildMode) {
+            const p = hit.object.position.clone().addScaledVector(hit.face.normal, 0.26);
+            if (isInsideZone(p.x, p.z)) {
+              const cols = [0x4ade80, 0x854d0e, 0x38bdf8, 0xfacc15];
+              spawnMcBlock(p.x, p.y, p.z, cols[Math.floor(Math.random() * cols.length)]);
+            }
+          } else {
+            worldGroup.remove(hit.object);
+            const idx = mcBlocks.indexOf(hit.object);
+            if (idx > -1) mcBlocks.splice(idx, 1);
+          }
+          return;
+        }
+      }
+
+      for (const m of movers) {
+        if (raycaster.intersectObjects(m.group.children, true).length > 0) {
+          if (m.onTap) m.onTap(m);
+          break;
+        }
+      }
+    }
+
+    function loadWorld(id) {
+      worldModal.style.display = 'none';
+      clearWorld();
+      currentTheme = id;
+
+      if (id === 'dino') buildDinoWorld();
+      else if (id === 'minecraft') buildMinecraftWorld();
+      else if (id === 'space') buildSpaceWorld();
+      else if (id === 'castle') buildCastleWorld();
+      else if (id === 'zombie') buildZombieWorld();
+      else if (id === 'gta') buildGtaWorld();
+    }
+
+    function spawnHumanoid(pos, shirtCol, headCol, lines, who, pitch, onTapCustom = null) {
+      const g = new THREE.Group();
+      g.position.copy(pos);
+      const makeLimb = (w, h, x, y, mat) => {
+        const pv = new THREE.Group();
+        pv.position.set(x, y, 0);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), mat);
+        m.position.y = -h / 2;
+        pv.add(m);
+        g.add(pv);
+        return pv;
+      };
+      const leftLeg = makeLimb(0.06, 0.36, -0.045, 0.36, new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+      const rightLeg = makeLimb(0.06, 0.36, 0.045, 0.36, new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.36, 0.11),
+        new THREE.MeshStandardMaterial({ color: shirtCol }));
+      torso.position.y = 0.54;
+      g.add(torso);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12),
+        new THREE.MeshStandardMaterial({ color: headCol }));
+      head.position.y = 0.81;
+      g.add(head);
+
+      worldGroup.add(g);
+      movers.push({
+        group: g, leftLeg, rightLeg,
+        target: randomPointInZone(0.2),
+        speed: 0.32 + Math.random() * 0.18,
+        waitTimer: Math.random(),
+        phase: Math.random() * 5,
+        onTap: onTapCustom || (() => {
+          const line = lines[Math.floor(Math.random() * lines.length)];
+          speakLine(who, line, pitch);
+        })
+      });
+      return g;
+    }
+
+    function buildDinoWorld() {
+      hudTop.textContent = 'DINOSAURIER: Tippe auf einen Dino, um ihn brüllen zu hören!';
+      speakLine('URZEIT-GUIDE', 'Willkommen bei den Dinosauriern! Tippe sie ruhig mal an.', 1.1);
+
+      for (let i = 0; i < 3; i++) {
+        const p = randomPointInZone(0.3);
+        const t = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.85, 8), new THREE.MeshStandardMaterial({ color: 0x713f12 }));
+        t.position.set(p.x, floorY + 0.42, p.z);
+        worldGroup.add(t);
+        const l = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.32, 6), new THREE.MeshStandardMaterial({ color: 0x15803d }));
+        l.position.set(p.x, floorY + 0.9, p.z);
+        worldGroup.add(l);
+      }
+
+      const spawnDino = (sc, col, big) => {
+        const g = new THREE.Group();
+        g.position.copy(randomPointInZone(0.3));
+        const mat = new THREE.MeshStandardMaterial({ color: col });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.32 * sc, 0.32 * sc, 0.54 * sc), mat);
+        body.position.y = 0.52 * sc;
+        g.add(body);
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.24 * sc, 0.22 * sc, 0.34 * sc), mat);
+        head.position.set(0, 0.78 * sc, 0.35 * sc);
+        g.add(head);
+        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.11 * sc, 0.6 * sc, 6).rotateX(-Math.PI / 2), mat);
+        tail.position.set(0, 0.5 * sc, -0.52 * sc);
+        g.add(tail);
+        worldGroup.add(g);
+
+        movers.push({
+          group: g, target: randomPointInZone(0.2), speed: big ? 0.34 : 0.52, waitTimer: 0.4, phase: 0,
+          onTap: () => speakLine(big ? 'T-REX' : 'RAPTOR', big ? 'Roooaaar! Ich bin der König der Urzeit!' : 'Krrr! Ich suche mein Rudel!', big ? 0.45 : 1.35, 0.9)
+        });
+      };
+      spawnDino(1.0, 0x3f6212, true);
+      spawnDino(0.55, 0xb45309, false);
+    }
+
+    function spawnMcBlock(x, y, z, color) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.26), new THREE.MeshStandardMaterial({ color }));
+      m.position.set(x, y, z);
+      worldGroup.add(m);
+      mcBlocks.push(m);
+    }
+
+    function buildMinecraftWorld() {
+      mcBuildMode = true;
+      actionBtn.style.display = 'block';
+      actionBtn.textContent = 'MODUS: BAUEN';
+      hudTop.textContent = 'MINECRAFT: Tippe Blöcke zum Bauen an oder sprich mit den Mobs!';
+      speakLine('BAU-WELT', 'Minecraft-Welt gestartet! Bau dir etwas Cooles.', 1.15);
+
+      for (let i = 0; i < 6; i++) {
+        const p = randomPointInZone(0.25);
+        spawnMcBlock(p.x, floorY + 0.13, p.z, [0x4ade80, 0x38bdf8, 0xfacc15][i % 3]);
+      }
+      [0x22c55e, 0xf472b6].forEach((col, idx) => {
+        const g = new THREE.Group();
+        g.position.copy(randomPointInZone(0.25));
+        const b = new THREE.Mesh(new THREE.BoxGeometry(0.24, idx === 0 ? 0.52 : 0.24, 0.28),
+          new THREE.MeshStandardMaterial({ color: col }));
+        b.position.y = idx === 0 ? 0.26 : 0.16;
+        g.add(b);
+        worldGroup.add(g);
+        movers.push({
+          group: g, target: randomPointInZone(0.2), speed: 0.35, waitTimer: 0.4, phase: idx, hop: true,
+          onTap: () => speakLine(idx === 0 ? 'BLOCK-MOB' : 'SCHWEIN', idx === 0 ? 'Zisch... Keine Sorge, ich explodiere heute nicht!' : 'Oink! Hast du Karotten für mich?', idx === 0 ? 0.8 : 1.4)
+        });
+      });
+    }
+
+    function buildSpaceWorld() {
+      hudTop.textContent = 'WELTRAUM: Tippe die Astronauten an, um den Funkspruch zu hören!';
+      speakLine('RAUMSTATION', 'Willkommen im All! Ein UFO schwebt über deinem Zimmer.', 1.1);
+
+      const planet = new THREE.Mesh(new THREE.SphereGeometry(0.32, 20, 20), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
+      planet.position.set(centerPos.x, floorY + 1.35, centerPos.z - 0.6);
+      worldGroup.add(planet);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.04, 8, 30).rotateX(Math.PI / 2.4),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+      ring.position.copy(planet.position);
+      worldGroup.add(ring);
+
+      const ufo = new THREE.Group();
+      ufo.position.copy(randomPointInZone(0.3));
+      ufo.position.y = floorY + 1.05;
+      const saucer = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.35, 0.1, 18), new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 }));
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 14), new THREE.MeshBasicMaterial({ color: 0x22c55e }));
+      dome.position.y = 0.06;
+      ufo.add(saucer, dome);
+      worldGroup.add(ufo);
+      movers.push({
+        group: ufo, target: randomPointInZone(0.2), speed: 0.48, waitTimer: 0, phase: 0, fixedY: floorY + 1.05,
+        onTap: () => speakLine('ALIEN-UFO', 'Piep Piep! Wir scannen gerade dein Zimmer!', 1.5, 1.15)
+      });
+
+      spawnHumanoid(randomPointInZone(0.25), 0xf8fafc, 0x38bdf8,
+        ['Hier Basis, Schwerkraft ist stabil!', 'Vorsicht vor dem grünen UFO da oben!'], 'ASTRONAUT', 1.05);
+      spawnHumanoid(randomPointInZone(0.25), 0xf8fafc, 0xfacc15,
+        ['Wir suchen neue Planeten direkt in deinem Haus!'], 'KOMMANDANTIN', 1.25);
+    }
+
+    function buildCastleWorld() {
+      hudTop.textContent = 'RITTERBURG: Sprich mit den Rittern und beschütze den Schatz!';
+      speakLine('HEROLD', 'Seid gegrüßt! Die Ritterburg steht nun in eurem Reich.', 0.9);
+
+      const stoneMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9 });
+      corners.forEach(p => {
+        const bx = p.x + (centerPos.x - p.x) * 0.25;
+        const bz = p.z + (centerPos.z - p.z) * 0.25;
+        const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.25, 1.1, 10), stoneMat);
+        tower.position.set(bx, floorY + 0.55, bz);
+        worldGroup.add(tower);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.35, 10), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
+        roof.position.set(bx, floorY + 1.25, bz);
+        worldGroup.add(roof);
+      });
+
+      const chest = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.22, 0.22), new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.7 }));
+      chest.position.set(centerPos.x, floorY + 0.11, centerPos.z);
+      worldGroup.add(chest);
+
+      spawnHumanoid(randomPointInZone(0.25), 0x94a3b8, 0xcbd5e1,
+        ['Halt, wer da? Wir bewachen den goldenen Schatz!', 'Für Ehre und Königreich!'], 'RITTER ROLAND', 0.85);
+      spawnHumanoid(randomPointInZone(0.25), 0xdc2626, 0xe5b899,
+        ['Habt ihr irgendwo einen Drachen gesehen?'], 'KNAPPE LEO', 1.15);
+    }
+
+    function buildZombieWorld() {
+      hudTop.textContent = 'ZOMBIE-ABWEHR (ab 12): Tippe Zombies an, um sie zu verjagen (+$100)!';
+      speakLine('FUNKSPRUCH', 'Achtung! Zombies wurden in deiner Zone gesichtet. Tippe sie an!', 0.95);
+
+      for (let i = 0; i < 4; i++) {
+        spawnHumanoid(randomPointInZone(0.2), 0x334155, 0x4ade80, ['Grrr...'], 'ZOMBIE', 0.5, (m) => {
+          addMoney(100);
+          speakLine('TREFFER!', 'Zombie verjagt! Plus einhundert Dollar!', 1.0);
+          m.group.position.copy(randomPointInZone(0.2));
+        });
+      }
+    }
+
+    function buildGtaWorld() {
+      actionBtn.style.display = 'block';
+      actionBtn.textContent = 'AUTO FAHREN';
+      hudTop.textContent = 'GTA STREET CITY (18+): Fahr dein Auto oder tippe die Leute auf der Straße an!';
+      speakLine('STREET-RADIO', 'Willkommen in der achtzehn-plus Street City. Hier regiert die Straße.', 0.8);
+
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x161b26, roughness: 0.7 });
+      const neons = [0x00f0ff, 0xff0077, 0xfacc15];
+      for (let i = 0; i < 3; i++) {
+        const p = corners[i];
+        const bx = p.x + (centerPos.x - p.x) * 0.25, bz = p.z + (centerPos.z - p.z) * 0.25;
+        const h = 1.4 + i * 0.35;
+        const t = new THREE.Mesh(new THREE.BoxGeometry(0.42, h, 0.42), darkMat);
+        t.position.set(bx, floorY + h / 2, bz);
+        worldGroup.add(t);
+        const neon = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.06, 0.44), new THREE.MeshBasicMaterial({ color: neons[i] }));
+        neon.position.set(bx, floorY + h - 0.12, bz);
+        worldGroup.add(neon);
+      }
+
+      carGroup = new THREE.Group();
+      carGroup.position.set(centerPos.x, floorY, centerPos.z);
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.1, 0.56), new THREE.MeshStandardMaterial({ color: 0xe11d48, metalness: 0.6 }));
+      body.position.y = 0.08;
+      carGroup.add(body);
+      const cab = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.08, 0.26), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+      cab.position.set(0, 0.16, 0.02);
+      carGroup.add(cab);
+      worldGroup.add(carGroup);
+
+      const streetTalk = [
+        'Ey! Glotz nicht so blöd, sonst gibt es Stress!',
+        'Das
